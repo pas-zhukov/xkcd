@@ -1,0 +1,7 @@
+.idea
+__pycache__
+images
+test.*
+*.png
+*.jpg
+.env
