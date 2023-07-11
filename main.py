@@ -102,7 +102,7 @@ def post_comic_on_wall(path: str,
     return post_response.json()
 
 
-def get_random_comic_id():
+def get_random_comic_id() -> int:
     response = requests.get(CURRENT_COMIC_API_URL)
     response.raise_for_status()
     last_comic_id = response.json()['num']
