@@ -1,5 +1,4 @@
 import os
-from random import shuffle
 import pathlib
 from urllib.parse import urlparse, unquote
 from datetime import datetime
@@ -42,4 +41,3 @@ def get_file_extension(image_url: str) -> tuple[str, str]:
     filename = os.path.split(path_only)[1]
     extension = os.path.splitext(path_only)[1]
     return filename, extension
-

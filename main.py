@@ -29,7 +29,10 @@ def main():
     vk_group_id = os.getenv('VK_GROUP_ID')
     try:
         comic_filname, comic_comment = download_xkcd_comic(args.comic_id)
-        post_comic_on_wall(comic_filname, comic_comment, vk_access_token, vk_group_id)
+        post_comic_on_wall(comic_filname,
+                           comic_comment,
+                           vk_access_token,
+                           vk_group_id)
     finally:
         os.remove(comic_filname)
 
@@ -75,7 +78,9 @@ def get_upload_url(vk_access_token: str,
         'group_id': group_id
     }
 
-    get_link_response = requests.get(get_upload_link_api_url, headers=auth_header, params=get_link_params)
+    get_link_response = requests.get(get_upload_link_api_url,
+                                     headers=auth_header,
+                                     params=get_link_params)
     get_link_response.raise_for_status()
     raise_if_vk_error(get_link_response)
     upload_url = get_link_response.json()['response']['upload_url']
@@ -128,7 +133,9 @@ def save_image_on_server(save_params: dict,
         'Authorization': f'Bearer {vk_access_token}'
     }
 
-    save_img_response = requests.post(save_img_api_url, params=save_params, headers=auth_header)
+    save_img_response = requests.post(save_img_api_url,
+                                      params=save_params,
+                                      headers=auth_header)
     save_img_response.raise_for_status()
     raise_if_vk_error(save_img_response)
     saved_img_metadata = save_img_response.json()
@@ -165,7 +172,9 @@ def _post_on_wall(img_metadata: dict,
         'Authorization': f'Bearer {vk_access_token}'
     }
 
-    post_response = requests.post(post_on_wall_api_url, params=post_params, headers=auth_header)
+    post_response = requests.post(post_on_wall_api_url,
+                                  params=post_params,
+                                  headers=auth_header)
     post_response.raise_for_status()
     raise_if_vk_error(post_response)
     return post_response.json()
@@ -186,10 +195,20 @@ def post_comic_on_wall(path: str,
     :param api_version: version of VK API to be used
     :return: response of the post request
     """
-    upload_url = get_upload_url(vk_access_token, group_id, api_version=api_version)
-    save_params = send_file_to_server(path, upload_url)
-    saved_img_metadata = save_image_on_server(save_params, vk_access_token, group_id, api_version)
-    vk_post_code = _post_on_wall(saved_img_metadata, comic_comment, vk_access_token, group_id, api_version)
+    upload_url = get_upload_url(vk_access_token,
+                                group_id,
+                                api_version=api_version)
+    save_params = send_file_to_server(path,
+                                      upload_url)
+    saved_img_metadata = save_image_on_server(save_params,
+                                              vk_access_token,
+                                              group_id,
+                                              api_version)
+    vk_post_code = _post_on_wall(saved_img_metadata,
+                                 comic_comment,
+                                 vk_access_token,
+                                 group_id,
+                                 api_version)
     return vk_post_code
 
 
