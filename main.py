@@ -79,7 +79,7 @@ def post_comic_on_wall(path: str,
     save_img_api_url = 'https://api.vk.com/method/photos.saveWallPhoto'
     save_params.update({
         'v': api_version,
-        'group_id': 221535503
+        'group_id': group_id
     })
     save_img_response = requests.post(save_img_api_url, params=save_params, headers=auth_header)
     save_img_response.raise_for_status()
@@ -92,11 +92,11 @@ def post_comic_on_wall(path: str,
         'message': comic_comment,
         'attachments': f'photo{saved_img_metadata["response"][0]["owner_id"]}_{saved_img_metadata["response"][0]["id"]}',
         'from_group': 1,
-        'owner_id': -221535503
+        'owner_id': f'-{group_id}'
     }
     post_params.update({
         'v': api_version,
-        'group_id': 221535503
+        'group_id': group_id
     })
     post_response = requests.post(post_on_wall_api_url, params=post_params, headers=auth_header)
     post_response.raise_for_status()
