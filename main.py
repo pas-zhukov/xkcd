@@ -1,15 +1,35 @@
-import requests
-from pprint import pprint
-from img_functions import download_image, get_file_extension
+from argparse import ArgumentParser
 import os
+import random
+
+from dotenv import load_dotenv
+import requests
+
+from img_functions import download_image, get_file_extension
+
 
 CURRENT_COMIC_API_URL = 'https://xkcd.com/info.0.json'
 
 
 def main():
-    comic_id = 1
+    load_dotenv()
+    arg_parser = ArgumentParser(
+        description="This program allows to post xkcd comics in your VK group."
+    )
+    arg_parser.add_argument(
+        "-id",
+        "--comic_id",
+        help="ID of comic to post. Default is random.",
+        default=get_random_comic_id(),
+        type=int
+    )
+    args = arg_parser.parse_args()
 
-    comic_filname, comic_comment = download_xkcd_comic(comic_id)
+    vk_access_token = os.getenv('VK_ACCESS_TOKEN')
+    vk_group_id = os.getenv('VK_GROUP_ID')
+    comic_filname, comic_comment = download_xkcd_comic(args.comic_id)
+    post_comic_on_wall(comic_filname, comic_comment, vk_access_token, vk_group_id)
+    os.remove(comic_filname)
 
 
 def download_xkcd_comic(comic_id: int):
@@ -26,7 +46,7 @@ def download_xkcd_comic(comic_id: int):
 def post_comic_on_wall(path: str,
                        comic_comment: str,
                        vk_access_token: str,
-                       group_id: int,
+                       group_id: int or str,
                        api_version: str = '5.131'):
     #  Getting upload URL.
     get_upload_link_api_url = 'https://api.vk.com/method/photos.getWallUploadServer'
@@ -40,6 +60,7 @@ def post_comic_on_wall(path: str,
 
     get_link_response = requests.get(get_upload_link_api_url, headers=auth_header, params=get_link_params)
     get_link_response.raise_for_status()
+    raise_if_vk_error(get_link_response)
     upload_url = get_link_response.json()['response']['upload_url']
 
     #  Sending file to server.
@@ -49,6 +70,7 @@ def post_comic_on_wall(path: str,
         }
         sending_response = requests.post(upload_url, files=sending_params)
         sending_response.raise_for_status()
+        raise_if_vk_error(sending_response)
         save_params = sending_response.json()
 
     #  Saving image on server.
@@ -59,6 +81,7 @@ def post_comic_on_wall(path: str,
     })
     save_img_response = requests.post(save_img_api_url, params=save_params, headers=auth_header)
     save_img_response.raise_for_status()
+    raise_if_vk_error(save_img_response)
     saved_img_metadata = save_img_response.json()
 
     #  Posting image on the group wall.
@@ -75,10 +98,18 @@ def post_comic_on_wall(path: str,
     })
     post_response = requests.post(post_on_wall_api_url, params=post_params, headers=auth_header)
     post_response.raise_for_status()
+    raise_if_vk_error(post_response)
     return post_response.json()
 
 
-def check_for_error(response: requests.Response):
+def get_random_comic_id():
+    response = requests.get(CURRENT_COMIC_API_URL)
+    response.raise_for_status()
+    last_comic_id = response.json()['num']
+    return random.randint(1, last_comic_id)
+
+
+def raise_if_vk_error(response: requests.Response):
     response = response.json()
     try:
         raise VKError(response['error']['error_msg'])
