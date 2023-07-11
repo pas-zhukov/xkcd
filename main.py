@@ -27,9 +27,11 @@ def main():
 
     vk_access_token = os.getenv('VK_ACCESS_TOKEN')
     vk_group_id = os.getenv('VK_GROUP_ID')
-    comic_filname, comic_comment = download_xkcd_comic(args.comic_id)
-    post_comic_on_wall(comic_filname, comic_comment, vk_access_token, vk_group_id)
-    os.remove(comic_filname)
+    try:
+        comic_filname, comic_comment = download_xkcd_comic(args.comic_id)
+        post_comic_on_wall(comic_filname, comic_comment, vk_access_token, vk_group_id)
+    finally:
+        os.remove(comic_filname)
 
 
 def download_xkcd_comic(comic_id: int):
