@@ -35,6 +35,14 @@ def main():
 
 
 def download_xkcd_comic(comic_id: int):
+    """
+    Downloads xkcd comic.
+
+    Downloads an xkcd comic image and its corresponding
+    alt text from the xkcd API, using a given comic ID.
+    :param comic_id:  ID of the xkcd comic to be downloaded
+    :return: filename of the downloaded image, alt text of the downloaded comic
+    """
     api_url = f'https://xkcd.com/{comic_id}/info.0.json'
     response = requests.get(api_url)
     response.raise_for_status()
@@ -48,7 +56,16 @@ def download_xkcd_comic(comic_id: int):
 def get_upload_url(vk_access_token: str,
                    group_id: int or str,
                    api_version: str) -> str:
+    """
+    Obtains upload URL.
 
+    Obtains the upload URL for a photo that will
+    be posted on a VK group wall.
+    :param vk_access_token: access token for VK API
+    :param group_id: ID of the VK group
+    :param api_version: version of VK API to be used
+    :return: URL where the photo should be uploaded
+    """
     get_upload_link_api_url = 'https://api.vk.com/method/photos.getWallUploadServer'
     auth_header = {
         'Authorization': f'Bearer {vk_access_token}'
@@ -67,6 +84,15 @@ def get_upload_url(vk_access_token: str,
 
 def send_file_to_server(path: str,
                         upload_url: str) -> dict:
+    """
+    Sends file to server.
+
+    Sends a file to a server using a given upload URL and
+    return the parameters required to save the file on the server.
+    :param path: path of the file to be sent
+    :param upload_url: URL of the server to which the file will be sent
+    :return: parameters required to save the file on the server
+    """
     with open(path, 'rb') as file:
         sending_params = {
             'photo': file
@@ -79,13 +105,29 @@ def send_file_to_server(path: str,
 
 
 def save_image_on_server(save_params: dict,
+                         vk_access_token: str,
                          group_id: int or str,
                          api_version: str) -> dict:
+    """
+    Saves uploaded photo on server.
+
+    Save an image on the VK server using the VK API method
+    'photos.saveWallPhoto' and return the metadata of the saved image.
+    :param save_params: parameters required to save the image
+    :param vk_access_token: access token for the VK API
+    :param group_id: ID of the VK group
+    :param api_version: version of the VK API to be used
+    :return: metadata of the saved image
+    """
     save_img_api_url = 'https://api.vk.com/method/photos.saveWallPhoto'
     save_params.update({
         'v': api_version,
         'group_id': group_id
     })
+    auth_header = {
+        'Authorization': f'Bearer {vk_access_token}'
+    }
+
     save_img_response = requests.post(save_img_api_url, params=save_params, headers=auth_header)
     save_img_response.raise_for_status()
     raise_if_vk_error(save_img_response)
@@ -95,8 +137,19 @@ def save_image_on_server(save_params: dict,
 
 def _post_on_wall(img_metadata: dict,
                   comic_comment: str,
+                  vk_access_token: str,
                   group_id: int or str,
                   api_version: str) -> dict:
+    """
+    Posts photo. On the wall.
+
+    :param img_metadata: metadata of the image to be posted
+    :param comic_comment: comment to be posted along with the image
+    :param vk_access_token: access token for VK API
+    :param group_id:  ID of the VK group
+    :param api_version: version of VK API to be used
+    :return: response of the post request
+    """
     post_on_wall_api_url = 'https://api.vk.com/method/wall.post'
     post_params = {
         'message': comic_comment,
@@ -108,6 +161,10 @@ def _post_on_wall(img_metadata: dict,
         'v': api_version,
         'group_id': group_id
     })
+    auth_header = {
+        'Authorization': f'Bearer {vk_access_token}'
+    }
+
     post_response = requests.post(post_on_wall_api_url, params=post_params, headers=auth_header)
     post_response.raise_for_status()
     raise_if_vk_error(post_response)
@@ -118,15 +175,33 @@ def post_comic_on_wall(path: str,
                        comic_comment: str,
                        vk_access_token: str,
                        group_id: int or str,
-                       api_version: str = '5.131'):
+                       api_version: str = '5.131') -> dict:
+    """
+    Posts photo on the VK group wall.
+
+    :param path: path of the xkcd comic image to be posted
+    :param comic_comment: comment to be posted along with the image
+    :param vk_access_token: access token for VK API
+    :param group_id: ID of the VK group
+    :param api_version: version of VK API to be used
+    :return: response of the post request
+    """
     upload_url = get_upload_url(vk_access_token, group_id, api_version=api_version)
     save_params = send_file_to_server(path, upload_url)
-    saved_img_metadata = save_image_on_server(save_params, group_id, api_version)
-    vk_post_code = _post_on_wall(saved_img_metadata, comic_comment, group_id, api_version)
+    saved_img_metadata = save_image_on_server(save_params, vk_access_token, group_id, api_version)
+    vk_post_code = _post_on_wall(saved_img_metadata, comic_comment, vk_access_token, group_id, api_version)
     return vk_post_code
 
 
 def get_random_comic_id() -> int:
+    """
+    Gives you random comic ID.
+
+    Generate a random comic ID within the range
+    of the first and the latest comic ID
+    available on the xkcd website.
+    :return: ID of a comic
+    """
     response = requests.get(CURRENT_COMIC_API_URL)
     response.raise_for_status()
     last_comic_id = response.json()['num']
@@ -134,6 +209,14 @@ def get_random_comic_id() -> int:
 
 
 def raise_if_vk_error(response: requests.Response):
+    """
+    Checks if VK response has no errors.
+
+    Raises a custom VKError exception if the VK API
+    response contains an error message
+    :param response: requests.Response object
+    :return: None
+    """
     response = response.json()
     try:
         raise VKError(response['error']['error_msg'])
@@ -142,6 +225,11 @@ def raise_if_vk_error(response: requests.Response):
 
 
 class VKError(requests.HTTPError):
+    """
+
+    Custom exception, that handles errors
+    from VK API response.
+    """
     def __init__(self, message: str = "Error in VK response."):
         super().__init__(message)
 
