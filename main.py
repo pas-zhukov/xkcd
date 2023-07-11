@@ -69,9 +69,9 @@ def post_comic_on_wall(path: str,
             'photo': file
         }
         sending_response = requests.post(upload_url, files=sending_params)
-        sending_response.raise_for_status()
-        raise_if_vk_error(sending_response)
-        save_params = sending_response.json()
+    sending_response.raise_for_status()
+    raise_if_vk_error(sending_response)
+    save_params = sending_response.json()
 
     #  Saving image on server.
     save_img_api_url = 'https://api.vk.com/method/photos.saveWallPhoto'
