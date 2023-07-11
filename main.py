@@ -45,12 +45,10 @@ def download_xkcd_comic(comic_id: int):
     return filename, comic['alt']
 
 
-def post_comic_on_wall(path: str,
-                       comic_comment: str,
-                       vk_access_token: str,
-                       group_id: int or str,
-                       api_version: str = '5.131'):
-    #  Getting upload URL.
+def get_upload_url(vk_access_token: str,
+                   group_id: int or str,
+                   api_version: str) -> str:
+
     get_upload_link_api_url = 'https://api.vk.com/method/photos.getWallUploadServer'
     auth_header = {
         'Authorization': f'Bearer {vk_access_token}'
@@ -64,8 +62,11 @@ def post_comic_on_wall(path: str,
     get_link_response.raise_for_status()
     raise_if_vk_error(get_link_response)
     upload_url = get_link_response.json()['response']['upload_url']
+    return upload_url
 
-    #  Sending file to server.
+
+def send_file_to_server(path: str,
+                        upload_url: str) -> dict:
     with open(path, 'rb') as file:
         sending_params = {
             'photo': file
@@ -74,8 +75,12 @@ def post_comic_on_wall(path: str,
     sending_response.raise_for_status()
     raise_if_vk_error(sending_response)
     save_params = sending_response.json()
+    return save_params
 
-    #  Saving image on server.
+
+def save_image_on_server(save_params: dict,
+                         group_id: int or str,
+                         api_version: str) -> dict:
     save_img_api_url = 'https://api.vk.com/method/photos.saveWallPhoto'
     save_params.update({
         'v': api_version,
@@ -85,12 +90,17 @@ def post_comic_on_wall(path: str,
     save_img_response.raise_for_status()
     raise_if_vk_error(save_img_response)
     saved_img_metadata = save_img_response.json()
+    return saved_img_metadata
 
-    #  Posting image on the group wall.
+
+def _post_on_wall(img_metadata: dict,
+                  comic_comment: str,
+                  group_id: int or str,
+                  api_version: str) -> dict:
     post_on_wall_api_url = 'https://api.vk.com/method/wall.post'
     post_params = {
         'message': comic_comment,
-        'attachments': f'photo{saved_img_metadata["response"][0]["owner_id"]}_{saved_img_metadata["response"][0]["id"]}',
+        'attachments': f'photo{img_metadata["response"][0]["owner_id"]}_{img_metadata["response"][0]["id"]}',
         'from_group': 1,
         'owner_id': f'-{group_id}'
     }
@@ -102,6 +112,18 @@ def post_comic_on_wall(path: str,
     post_response.raise_for_status()
     raise_if_vk_error(post_response)
     return post_response.json()
+
+
+def post_comic_on_wall(path: str,
+                       comic_comment: str,
+                       vk_access_token: str,
+                       group_id: int or str,
+                       api_version: str = '5.131'):
+    upload_url = get_upload_url(vk_access_token, group_id, api_version=api_version)
+    save_params = send_file_to_server(path, upload_url)
+    saved_img_metadata = save_image_on_server(save_params, group_id, api_version)
+    vk_post_code = _post_on_wall(saved_img_metadata, comic_comment, group_id, api_version)
+    return vk_post_code
 
 
 def get_random_comic_id() -> int:
