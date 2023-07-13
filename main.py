@@ -109,7 +109,9 @@ def send_file_to_server(path: str,
     return save_params
 
 
-def save_image_on_server(save_params: dict,
+def save_image_on_server(server_save_param: int,
+                         photo_save_param: str,
+                         hash_save_param: str,
                          vk_access_token: str,
                          group_id: int or str,
                          api_version: str) -> dict:
@@ -118,17 +120,23 @@ def save_image_on_server(save_params: dict,
 
     Save an image on the VK server using the VK API method
     'photos.saveWallPhoto' and return the metadata of the saved image.
-    :param save_params: parameters required to save the image
+
+    :param hash_save_param: uploaded file hash
+    :param photo_save_param: photo params (links and etc.)
+    :param server_save_param: server num save param
     :param vk_access_token: access token for the VK API
     :param group_id: ID of the VK group
     :param api_version: version of the VK API to be used
     :return: metadata of the saved image
     """
     save_img_api_url = 'https://api.vk.com/method/photos.saveWallPhoto'
-    save_params.update({
+    save_params = {
         'v': api_version,
-        'group_id': group_id
-    })
+        'group_id': group_id,
+        'server': server_save_param,
+        'photo': photo_save_param,
+        'hash': hash_save_param
+    }
     auth_header = {
         'Authorization': f'Bearer {vk_access_token}'
     }
@@ -200,7 +208,9 @@ def post_comic_on_wall(path: str,
                                 api_version=api_version)
     save_params = send_file_to_server(path,
                                       upload_url)
-    saved_img_metadata = save_image_on_server(save_params,
+    saved_img_metadata = save_image_on_server(save_params['server'],
+                                              save_params['photo'],
+                                              save_params['hash'],
                                               vk_access_token,
                                               group_id,
                                               api_version)
