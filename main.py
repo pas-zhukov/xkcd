@@ -150,7 +150,8 @@ def save_image_on_server(server_save_param: int,
     return saved_img_metadata
 
 
-def _post_on_wall(img_metadata: dict,
+def _post_on_wall(img_id: int or str,
+                  img_owner_id: int or str,
                   comic_comment: str,
                   vk_access_token: str,
                   group_id: int or str,
@@ -158,7 +159,8 @@ def _post_on_wall(img_metadata: dict,
     """
     Posts photo. On the wall.
 
-    :param img_metadata: metadata of the image to be posted
+    :param img_id: image ID on server
+    :param img_owner_id: image owner id
     :param comic_comment: comment to be posted along with the image
     :param vk_access_token: access token for VK API
     :param group_id:  ID of the VK group
@@ -168,7 +170,7 @@ def _post_on_wall(img_metadata: dict,
     post_on_wall_api_url = 'https://api.vk.com/method/wall.post'
     post_params = {
         'message': comic_comment,
-        'attachments': f'photo{img_metadata["response"][0]["owner_id"]}_{img_metadata["response"][0]["id"]}',
+        'attachments': f'photo{img_owner_id}_{img_id}',
         'from_group': 1,
         'owner_id': f'-{group_id}'
     }
@@ -214,7 +216,8 @@ def post_comic_on_wall(path: str,
                                               vk_access_token,
                                               group_id,
                                               api_version)
-    vk_post_code = _post_on_wall(saved_img_metadata,
+    vk_post_code = _post_on_wall(saved_img_metadata["response"][0]["id"],
+                                 saved_img_metadata["response"][0]["owner_id"],
                                  comic_comment,
                                  vk_access_token,
                                  group_id,
